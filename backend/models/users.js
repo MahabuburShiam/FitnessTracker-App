@@ -1,10 +1,8 @@
 const {Database}= require('sequelize');
 const sequelize = require ('../config/database.js');
 const bcrypt = require ('bcryptjs');
-
 const User=sequelize.define ('User', {
     id : { type : DataTypes.UUID , defaultValue : DataTypes.UUIDV4, primaryKey : true},
-
     email : {type : DataTypes.STRING,allowNull : false, umique : true,validate : {inEmail : true}},
     password : {type : DaaTypes . STRING, allowNull : false},
     firstName:{type:DataTypes.STRING, allowNull : false},
@@ -16,7 +14,7 @@ const User=sequelize.define ('User', {
     height : {type : DataTypes.FLOAT, allowNull : false,
         validate : {min : 1, max : 300}},
     gender : {type :DataTypes.ENUM('male', 'female', 'other'), allowNull :false},
-    bmi :{type.DataTypes.VIRTUAL,
+    bmi :{type:DataTypes.VIRTUAL,
         get(){
             const weight =this.getDataValue('weight');
             const height=this.getDataValue('height');
@@ -30,9 +28,8 @@ const User=sequelize.define ('User', {
 
         type :DataTypes.VIRTUAL,
         get(){
-            this.get(){
-
-
+            this.get()
+            {
                 const bmi = this.get('bmi');
                 if (!bmi) return null;
                 if (bmi < 18.5) return 'Underweight';
@@ -43,7 +40,6 @@ const User=sequelize.define ('User', {
 
         }
     },
-
     // all the user infos to be saved coded above
     // below is the password part 
     hooks : {
@@ -52,7 +48,6 @@ const User=sequelize.define ('User', {
                 const salt = await bcrypt.genSalt(10);
                 user.password = await bcrypt.hash(user.password, salt);
             }
-
         },
         beforeUpdate : async (user) =>{
             if (user.changed('password')){
@@ -61,7 +56,6 @@ const User=sequelize.define ('User', {
             }
         }
     }
-
 });
 User.prototype.comparePassword = async function (candidatePassword) {
     return await bcrypt.compare(candidatePassword, this.password);
