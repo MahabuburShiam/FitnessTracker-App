@@ -1,6 +1,7 @@
 backend/
 ├── config/
 │   └── database.js
+│
 ├── controllers/
 │   ├── adminController.js
 │   ├── aiSuggestionController.js
@@ -12,8 +13,10 @@ backend/
 │   ├── notificationController.js
 │   ├── sleepAnalysisController.js
 │   └── trainerController.js
+│
 ├── middleware/
 │   └── auth.js
+│
 ├── models/
 │   ├── index.js
 │   ├── users.js
@@ -32,6 +35,7 @@ backend/
 │   ├── conversation.js
 │   ├── conversationparticipant.js
 │   └── message.js
+│
 ├── routes/
 │   ├── adminRoutes.js
 │   ├── aiSuggestionRoutes.js
@@ -43,12 +47,14 @@ backend/
 │   ├── notificationRoutes.js
 │   ├── sleepAnalysisRoutes.js
 │   └── trainerRoutes.js
+│
 ├── services/
 │   ├── aiSuggestionService.js
 │   ├── messagingService.js
 │   ├── notificationService.js
 │   └── sleepAnalysisService.js
-├── or server.js
+│
+├── server.js
 ├── package.json
 └── .env
 
