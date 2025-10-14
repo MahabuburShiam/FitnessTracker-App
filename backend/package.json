@@ -1,27 +1,35 @@
 {
-  "name": "backend",
+  "name": "fitnesstracker-app",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Fitness Tracker Application Backend",
+  "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "db:sync": "node -e \"require('./models').syncDatabase()\"",
+    "db:reset": "node -e \"require('./models').sequelize.sync({ force: true })\""
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
-    "bcryptjs": "^3.0.2",
-    "cors": "^2.8.5",
-    "dotenv": "^17.2.3",
-    "express": "^5.1.0",
-    "express-validator": "^7.2.1",
-    "jsonwebtoken": "^9.0.2",
-    "pg": "^8.16.3",
+    "express": "^4.18.2",
+    "sequelize": "^6.32.1",
+    "pg": "^8.11.3",
     "pg-hstore": "^2.3.4",
-    "sequelize": "^6.37.7"
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10"
-  }
+    "nodemon": "^3.0.1"
+  },
+  "keywords": [
+    "fitness",
+    "health",
+    "workout",
+    "nutrition",
+    "api"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
 }

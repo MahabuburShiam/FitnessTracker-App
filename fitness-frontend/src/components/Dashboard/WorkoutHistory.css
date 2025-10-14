@@ -1,0 +1,10 @@
+.workout-history {
+  padding: 20px;
+}
+
+.session-card {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}

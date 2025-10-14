@@ -1,0 +1,2 @@
+"use strict";(self.webpackChunkfitness_tracker_frontend=self.webpackChunkfitness_tracker_frontend||[]).push([[488],{488:(e,n,s)=>{new WeakMap;new Set}}]);
+//# sourceMappingURL=488.660c35fc.chunk.js.map

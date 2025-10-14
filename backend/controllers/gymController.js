@@ -14,7 +14,7 @@ exports.createGym = async (req, res) => {
       ownerId: req.user.id,
       name,
       description,
-      location: sequelize.fn('ST_GeomFromText', `POINT(${longitude} ${latitude})`),
+      location: { latitude, longitude }, // Changed to JSON
       address,
       facilities,
       openingHours,
@@ -37,16 +37,6 @@ exports.getNearbyGyms = async (req, res) => {
     }
 
     const gyms = await Gym.findAll({
-      where: sequelize.where(
-        sequelize.fn('ST_DWithin',
-          sequelize.col('location'),
-          sequelize.fn('ST_SetSRID', 
-            sequelize.fn('ST_MakePoint', parseFloat(longitude), parseFloat(latitude)), 
-          4326),
-          parseFloat(radius) / 111.32
-        ),
-        true
-      ),
       include: [
         {
           model: User,
@@ -61,24 +51,32 @@ exports.getNearbyGyms = async (req, res) => {
       limit: parseInt(limit)
     });
 
+    // Calculate distances and filter by radius
+    const userLat = parseFloat(latitude);
+    const userLng = parseFloat(longitude);
+    
     const gymsWithDistance = gyms.map(gym => {
       const gymData = gym.toJSON();
-      if (gymData.location && gymData.location.coordinates) {
-        const [lng, lat] = gymData.location.coordinates;
+      if (gymData.location && gymData.location.latitude && gymData.location.longitude) {
         const distance = this.calculateDistance(
-          parseFloat(latitude), 
-          parseFloat(longitude), 
-          lat, 
-          lng
+          userLat, 
+          userLng, 
+          gymData.location.latitude, 
+          gymData.location.longitude
         );
         gymData.distance = distance;
+      } else {
+        gymData.distance = null;
       }
       return gymData;
     });
 
-    gymsWithDistance.sort((a, b) => a.distance - b.distance);
+    // Filter by radius and sort by distance
+    const nearbyGyms = gymsWithDistance
+      .filter(gym => gym.distance !== null && gym.distance <= radius)
+      .sort((a, b) => a.distance - b.distance);
 
-    res.json({ gyms: gymsWithDistance });
+    res.json({ gyms: nearbyGyms });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -125,7 +123,7 @@ exports.updateGymRating = async (gymId) => {
 };
 
 exports.calculateDistance = (lat1, lon1, lat2, lon2) => {
-  const R = 6371;
+  const R = 6371; // Earth radius in km
   const dLat = this.toRad(lat2 - lat1);
   const dLon = this.toRad(lon2 - lon1);
   const a = Math.sin(dLat/2) * Math.sin(dLat/2) +

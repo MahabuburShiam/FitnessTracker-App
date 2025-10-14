@@ -29,7 +29,7 @@ exports.register = async (req, res) => {
       height,
       gender,
       userType: userType || 'user',
-      location: location ? `POINT(${location.longitude} ${location.latitude})` : null
+      location: location // JSON format: {latitude: x, longitude: y}
     });
 
     const token = generateToken(user.id);
@@ -46,7 +46,8 @@ exports.register = async (req, res) => {
         height: user.height,
         gender: user.gender,
         bmi: user.bmi,
-        bmiCategory: user.bmiCategory
+        bmiCategory: user.bmiCategory,
+        location: user.location
       },
       token
     });
@@ -58,6 +59,10 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
 
     // Find user
     const user = await User.findOne({ where: { email } });
@@ -85,7 +90,8 @@ exports.login = async (req, res) => {
         height: user.height,
         gender: user.gender,
         bmi: user.bmi,
-        bmiCategory: user.bmiCategory
+        bmiCategory: user.bmiCategory,
+        location: user.location
       },
       token
     });
@@ -99,6 +105,10 @@ exports.getProfile = async (req, res) => {
     const user = await User.findByPk(req.user.id, {
       attributes: { exclude: ['password'] }
     });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
 
     res.json({ user });
   } catch (error) {
@@ -122,7 +132,7 @@ exports.updateProfile = async (req, res) => {
       weight: weight || user.weight,
       height: height || user.height,
       gender: gender || user.gender,
-      location: location ? `POINT(${location.longitude} ${location.latitude})` : user.location
+      location: location || user.location
     });
 
     res.json({
@@ -137,9 +147,39 @@ exports.updateProfile = async (req, res) => {
         height: user.height,
         gender: user.gender,
         bmi: user.bmi,
-        bmiCategory: user.bmiCategory
+        bmiCategory: user.bmiCategory,
+        location: user.location
       }
     });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Current password and new password are required' });
+    }
+
+    const user = await User.findByPk(req.user.id);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Verify current password
+    const isCurrentPasswordValid = await user.comparePassword(currentPassword);
+    if (!isCurrentPasswordValid) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+
+    // Update password
+    user.password = newPassword;
+    await user.save();
+
+    res.json({ message: 'Password updated successfully' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
