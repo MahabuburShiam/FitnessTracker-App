@@ -1,40 +1,19 @@
-// backend/models/workoutsession.js
+// backend/models/workoutsuggestion.js
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
-const WorkoutSession = sequelize.define('WorkoutSession', {
+const WorkoutSuggestion = sequelize.define('WorkoutSuggestion', {
   id: {
     type: DataTypes.UUID,
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true
   },
-  userId: {
-    type: DataTypes.UUID,
-    allowNull: false,
-    references: {
-      model: 'Users',
-      key: 'id'
-    }
-  },
-  workoutSuggestionId: {
-    type: DataTypes.UUID,
-    allowNull: true,
-    references: {
-      model: 'WorkoutSuggestions',
-      key: 'id'
-    }
-  },
-  sessionDate: {
-    type: DataTypes.DATEONLY,
-    allowNull: false,
-    defaultValue: DataTypes.NOW
-  },
-  startTime: {
-    type: DataTypes.DATE,
+  name: {
+    type: DataTypes.STRING,
     allowNull: false
   },
-  endTime: {
-    type: DataTypes.DATE,
+  description: {
+    type: DataTypes.TEXT,
     allowNull: true
   },
   duration: {
@@ -42,42 +21,17 @@ const WorkoutSession = sequelize.define('WorkoutSession', {
     comment: 'Duration in minutes',
     allowNull: true
   },
+  difficulty: {
+    type: DataTypes.ENUM('beginner', 'intermediate', 'advanced'),
+    allowNull: true
+  },
   exercises: {
     type: DataTypes.JSON,
     defaultValue: [],
-    comment: 'Array of exercises performed with sets, reps, weights'
-  },
-  caloriesBurned: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
-    comment: 'Estimated calories burned'
-  },
-  notes: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  },
-  intensity: {
-    type: DataTypes.ENUM('low', 'moderate', 'high'),
-    defaultValue: 'moderate'
-  },
-  mood: {
-    type: DataTypes.ENUM('excellent', 'good', 'average', 'poor', 'terrible'),
-    allowNull: true
-  },
-  energyLevel: {
-    type: DataTypes.ENUM('very_high', 'high', 'moderate', 'low', 'very_low'),
-    allowNull: true
-  },
-  status: {
-    type: DataTypes.ENUM('planned', 'in_progress', 'completed', 'skipped', 'cancelled'),
-    defaultValue: 'planned'
+    comment: 'Array of exercises with sets, reps, weights'
   }
 }, {
-  indexes: [
-    {
-      fields: ['userId', 'sessionDate']
-    }
-  ]
+  tableName: 'WorkoutSuggestions'
 });
 
-module.exports = WorkoutSession;
+module.exports = WorkoutSuggestion;

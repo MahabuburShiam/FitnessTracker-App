@@ -2,13 +2,34 @@
 const { TrainerProfile, TrainerRating, User, sequelize } = require('../models');
 const { Op } = require('sequelize');
 
-exports.createTrainerProfile = async (req, res) => {
+// @desc    Get the profile of the logged-in trainer
+// @route   GET /api/trainers/profile
+// @access  Private (Trainer)
+exports.getMyTrainerProfile = async (req, res) => {
   try {
-    if (req.user.userType !== 'trainer') {
-      return res.status(403).json({ error: 'Only trainers can create trainer profiles' });
+    const profile = await TrainerProfile.findOne({
+      where: { userId: req.user.id },
+      include: [{ model: User, as: 'user', attributes: ['firstName', 'lastName', 'email'] }],
+    });
+ 
+    if (!profile) {
+      // This is not an error, it just means the trainer hasn't created a profile yet.
+      return res.status(404).json({ message: 'Trainer profile not found.' });
     }
 
-    const { specialization, experience, certifications, hourlyRate, bio, availability, languages } = req.body;
+    res.json(profile);
+  } catch (error) {
+    console.error('Error fetching trainer profile:', error);
+    res.status(500).json({ message: 'Server error while fetching profile.' });
+  }
+};
+
+// @desc    Create or update the profile of the logged-in trainer
+// @route   POST /api/trainers/profile
+// @access  Private (Trainer)
+exports.createOrUpdateTrainerProfile = async (req, res) => {
+  try {
+    const { specialization, experience, certifications, hourlyRate, bio, availability, languages } = req.body; // Assuming req.user is set by auth middleware
 
     const [trainerProfile, created] = await TrainerProfile.findOrCreate({
       where: { userId: req.user.id },
@@ -24,6 +45,7 @@ exports.createTrainerProfile = async (req, res) => {
     });
 
     if (!created) {
+      // If the profile already existed, update it with the new data.
       await trainerProfile.update({
         specialization,
         experience,
@@ -35,9 +57,15 @@ exports.createTrainerProfile = async (req, res) => {
       });
     }
 
-    res.json({ trainerProfile });
+    // Fetch the complete profile with user data to return to the frontend
+    const updatedProfile = await TrainerProfile.findOne({
+      where: { userId: req.user.id },
+      include: [{ model: User, as: 'user', attributes: ['firstName', 'lastName', 'email'] }],
+    });
+    res.status(created ? 201 : 200).json(updatedProfile);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Error saving trainer profile:', error);
+    res.status(500).json({ message: 'Server error while saving profile.' });
   }
 };
 

@@ -1,6 +1,6 @@
-// backend/controllers/gymController.js
 const { Gym, GymRating, User, sequelize } = require('../models');
 const { Op } = require('sequelize');
+const { calculateDistance } = require('../utils/geolocation');
 
 exports.createGym = async (req, res) => {
   try {
@@ -14,7 +14,7 @@ exports.createGym = async (req, res) => {
       ownerId: req.user.id,
       name,
       description,
-      location: { latitude, longitude }, // Changed to JSON
+      location: { latitude, longitude },
       address,
       facilities,
       openingHours,
@@ -28,13 +28,48 @@ exports.createGym = async (req, res) => {
   }
 };
 
+exports.getAllGyms = async (req, res) => {
+    try {
+        const gyms = await Gym.findAll({
+            include: [
+                { model: User, as: 'Owner', attributes: ['firstName', 'lastName'] },
+                { model: GymRating, attributes: ['rating'] }
+            ]
+        });
+        res.json({ gyms });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+exports.getGymById = async (req, res) => {
+    try {
+        const { gymId } = req.params;
+        const gym = await Gym.findByPk(gymId, {
+            include: [
+                { model: User, as: 'Owner', attributes: ['firstName', 'lastName'] },
+                { model: GymRating, include: [{ model: User, attributes: ['firstName'] }] }
+            ]
+        });
+        if (!gym) {
+            return res.status(404).json({ error: 'Gym not found' });
+        }
+        res.json({ gym });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
 exports.getNearbyGyms = async (req, res) => {
   try {
-    const { latitude, longitude, radius = 10, limit = 20 } = req.query;
-    
-    if (!latitude || !longitude) {
-      return res.status(400).json({ error: 'Latitude and longitude are required' });
+    const { radius = 10, limit = 20 } = req.query;
+    const user = await User.findByPk(req.user.id);
+
+    if (!user || !user.location || !user.location.latitude || !user.location.longitude) {
+      return res.status(400).json({ error: 'Your location is not set. Please update your profile.' });
     }
+
+    const { latitude, longitude } = user.location;
 
     const gyms = await Gym.findAll({
       include: [
@@ -51,14 +86,13 @@ exports.getNearbyGyms = async (req, res) => {
       limit: parseInt(limit)
     });
 
-    // Calculate distances and filter by radius
     const userLat = parseFloat(latitude);
     const userLng = parseFloat(longitude);
     
     const gymsWithDistance = gyms.map(gym => {
       const gymData = gym.toJSON();
       if (gymData.location && gymData.location.latitude && gymData.location.longitude) {
-        const distance = this.calculateDistance(
+        const distance = calculateDistance(
           userLat, 
           userLng, 
           gymData.location.latitude, 
@@ -71,7 +105,6 @@ exports.getNearbyGyms = async (req, res) => {
       return gymData;
     });
 
-    // Filter by radius and sort by distance
     const nearbyGyms = gymsWithDistance
       .filter(gym => gym.distance !== null && gym.distance <= radius)
       .sort((a, b) => a.distance - b.distance);
@@ -80,6 +113,58 @@ exports.getNearbyGyms = async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+};
+
+exports.updateGym = async (req, res) => {
+    try {
+        const { gymId } = req.params;
+        const gym = await Gym.findByPk(gymId);
+
+        if (!gym) {
+            return res.status(404).json({ error: 'Gym not found' });
+        }
+
+        if (gym.ownerId !== req.user.id && req.user.userType !== 'admin') {
+            return res.status(403).json({ error: 'You are not authorized to update this gym' });
+        }
+
+        const { name, description, latitude, longitude, address, facilities, openingHours, contactEmail, contactPhone } = req.body;
+
+        await gym.update({
+            name: name || gym.name,
+            description: description || gym.description,
+            location: (latitude && longitude) ? { latitude, longitude } : gym.location,
+            address: address || gym.address,
+            facilities: facilities || gym.facilities,
+            openingHours: openingHours || gym.openingHours,
+            contactEmail: contactEmail || gym.contactEmail,
+            contactPhone: contactPhone || gym.contactPhone
+        });
+
+        res.json({ gym });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+exports.deleteGym = async (req, res) => {
+    try {
+        const { gymId } = req.params;
+        const gym = await Gym.findByPk(gymId);
+
+        if (!gym) {
+            return res.status(404).json({ error: 'Gym not found' });
+        }
+
+        if (gym.ownerId !== req.user.id && req.user.userType !== 'admin') {
+            return res.status(403).json({ error: 'You are not authorized to delete this gym' });
+        }
+
+        await gym.destroy();
+        res.json({ message: 'Gym deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 };
 
 exports.rateGym = async (req, res) => {
@@ -120,19 +205,4 @@ exports.updateGymRating = async (gymId) => {
       totalReviews: parseInt(ratings[0].get('totalReviews') || 0)
     }, { where: { id: gymId } });
   }
-};
-
-exports.calculateDistance = (lat1, lon1, lat2, lon2) => {
-  const R = 6371; // Earth radius in km
-  const dLat = this.toRad(lat2 - lat1);
-  const dLon = this.toRad(lon2 - lon1);
-  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-          Math.cos(this.toRad(lat1)) * Math.cos(this.toRad(lat2)) *
-          Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return R * c;
-};
-
-exports.toRad = (degrees) => {
-  return degrees * (Math.PI/180);
 };

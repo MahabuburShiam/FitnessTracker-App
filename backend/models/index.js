@@ -17,7 +17,7 @@ try {
 }
 
 try {
-  WorkoutGoal = require('./workoutgoal.js');
+  WorkoutGoal = require('./workoutGoal.js');
   console.log('✅ WorkoutGoal model loaded successfully');
 } catch (error) {
   console.error('❌ Error loading WorkoutGoal model:', error.message);
@@ -41,7 +41,8 @@ try {
 }
 
 try {
-  WorkoutSession = require('./workoutsession.js');
+  WorkoutSession = require('./workoutSession.js');
+
   console.log('✅ WorkoutSession model loaded successfully');
 } catch (error) {
   console.error('❌ Error loading WorkoutSession model:', error.message);

@@ -1,11 +1,21 @@
 // trainerRoutes.js
 const express = require('express');
 const router = express.Router();
-const trainerController = require('../controllers/trainerController');
+const {
+  getMyTrainerProfile,
+  createOrUpdateTrainerProfile,
+  getTrainers,
+  rateTrainer
+} = require('../controllers/trainerController');
 const { auth } = require('../middleware/auth');
 
-router.post('/trainer/profile', auth, trainerController.createTrainerProfile);
-router.get('/trainers', auth, trainerController.getTrainers);
-router.post('/trainers/:trainerId/rate', auth, trainerController.rateTrainer);
+// Route to get and create/update the logged-in trainer's profile
+router.route('/profile').get(auth, getMyTrainerProfile).post(auth, createOrUpdateTrainerProfile);
+
+// Route to get a list of all trainers
+router.get('/', auth, getTrainers);
+
+// Route to rate a specific trainer
+router.post('/:trainerId/rate', auth, rateTrainer);
 
 module.exports = router;

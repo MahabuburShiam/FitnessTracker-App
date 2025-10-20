@@ -137,6 +137,19 @@ class MessagingService {
     return conversations.length > 0 ? conversations[0] : null;
   }
 
+  async startOrGetDirectConversation(userId1, userId2) {
+    const existingConversation = await this.findDirectConversation(userId1, userId2);
+
+    if (existingConversation) {
+      return existingConversation;
+    }
+
+    // Create a new direct conversation
+    const newConversation = await this.createConversation([userId2], null, userId1);
+
+    return newConversation.conversation;
+  }
+
   async addParticipant(conversationId, userId, adminId) {
     // Check if admin has permission
     const adminParticipant = await ConversationParticipant.findOne({
