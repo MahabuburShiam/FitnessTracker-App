@@ -29,7 +29,7 @@ app.use('/api/diet', require('./routes/diet'));
 app.use('/api/journals', require('./routes/journals'));
 app.use('/api/gyms', require('./routes/gyms'));
 app.use('/api/trainers', require('./routes/trainers'));
-app.use('/api/messages', require('./routes/messages'));
+///.use('/api/messages', require('./routes/messages'));
 app.use('/api/workouts', require('./routes/workouts'));
 app.use('/api/notifications', require('./routes/notifications'));
 // Add these routes after existing route imports
@@ -38,23 +38,45 @@ app.use('/api/reviews/trainer', require('./routes/trainerReviews'));
 app.use('/api/search', require('./routes/search'));
 app.use('/api/admin', require('./routes/admin')); // Renamed from pushNotifications.js for clarity
 app.use('/api/ai', require('./routes/aiRecommendations'));
+
+///messages_new
+app.use('/api/user-search', require('./routes/userSearch'));
+app.use('/api/messages', require('./routes/messages')); // Updated version
+
+
+
+
+
+
 // Socket.io for real-time messaging
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
+  // Join user's personal room
   socket.on('join_user', (userId) => {
     socket.join(`user_${userId}`);
+    console.log(`User ${userId} joined room user_${userId}`);
   });
 
+  // Handle sending messages
   socket.on('send_message', async (data) => {
     try {
+      const { senderId, receiverId, content } = data;
+
+      // Validate input
+      if (!senderId || !receiverId || !content || content.trim() === '') {
+        socket.emit('message_error', { error: 'Invalid message data' });
+        return;
+      }
+
+      // Save message to database
       const message = await db.Message.create({
-        sender_id: data.senderId,
-        receiver_id: data.receiverId,
-        content: data.content
+        sender_id: senderId,
+        receiver_id: receiverId,
+        content: content.trim()
       });
 
-      // Populate sender info
+      // Get message with sender info
       const messageWithSender = await db.Message.findByPk(message.id, {
         include: [
           {
@@ -65,18 +87,42 @@ io.on('connection', (socket) => {
         ]
       });
 
-      io.to(`user_${data.receiverId}`).emit('new_message', messageWithSender);
+      // Emit to sender (confirmation)
       socket.emit('message_sent', messageWithSender);
+
+      // Emit to receiver
+      io.to(`user_${receiverId}`).emit('new_message', messageWithSender);
+
+      console.log(`Message sent from ${senderId} to ${receiverId}`);
+
     } catch (error) {
       console.error('Send message error:', error);
       socket.emit('message_error', { error: 'Failed to send message' });
     }
   });
 
+  // Handle typing indicators
+  socket.on('typing_start', (data) => {
+    const { senderId, receiverId } = data;
+    socket.to(`user_${receiverId}`).emit('user_typing', { senderId, isTyping: true });
+  });
+
+  socket.on('typing_stop', (data) => {
+    const { senderId, receiverId } = data;
+    socket.to(`user_${receiverId}`).emit('user_typing', { senderId, isTyping: false });
+  });
+
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
   });
 });
+
+
+
+
+
+
+
 
 // Basic route
 app.get('/', (req, res) => {
