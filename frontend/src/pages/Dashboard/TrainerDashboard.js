@@ -1,6 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Button, Table, Form, Modal, Alert } from 'react-bootstrap';
+import { Container, Row, Col, Card, Button, Form, Modal, Alert } from 'react-bootstrap';
 import axios from 'axios';
+
+// Create axios instance with base URL and token handling
+const api = axios.create({
+  baseURL: 'http://localhost:5000/api',
+});
+
+// Add a request interceptor to include token automatically
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token'); // get token from localStorage
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 const TrainerDashboard = () => {
   const [trainer, setTrainer] = useState(null);
@@ -15,7 +32,7 @@ const TrainerDashboard = () => {
 
   const fetchTrainerData = async () => {
     try {
-      const res = await axios.get('/api/users/profile');
+      const res = await api.get('/users/profile'); // token sent automatically
       setTrainer(res.data.user.trainer_profile);
       setEditForm(res.data.user.trainer_profile || {});
     } catch (error) {
@@ -29,7 +46,7 @@ const TrainerDashboard = () => {
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.put('/api/trainers/profile', editForm);
+      await api.put('/trainers/profile', editForm); // token sent automatically
       setShowEditModal(false);
       fetchTrainerData();
     } catch (error) {

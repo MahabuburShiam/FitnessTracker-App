@@ -1,13 +1,35 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Button, Table, Form, Modal, Alert } from 'react-bootstrap';
+import { Container, Row, Col, Card, Button, Form, Modal, Alert } from 'react-bootstrap';
 import axios from 'axios';
+
+// Axios instance with base URL
+const api = axios.create({
+  baseURL: 'http://localhost:5000/api',
+});
+
+// Attach token automatically
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 const GymOwnerDashboard = () => {
   const [gym, setGym] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editForm, setEditForm] = useState({});
+  const [editForm, setEditForm] = useState({
+    gym_name: '',
+    address: '',
+    description: '',
+    pricing: '',
+    location_lat: '',
+    location_lng: ''
+  });
 
   useEffect(() => {
     fetchGymData();
@@ -15,11 +37,19 @@ const GymOwnerDashboard = () => {
 
   const fetchGymData = async () => {
     try {
-      const res = await axios.get('/api/users/profile');
-      setGym(res.data.user.gym);
-      setEditForm(res.data.user.gym || {});
-    } catch (error) {
-      console.error('Fetch gym data error:', error);
+      const res = await api.get('/users/profile');
+      const userGym = res.data.user.gym || {};
+      setGym(userGym);
+      setEditForm({
+        gym_name: userGym.gym_name || '',
+        address: userGym.address || '',
+        description: userGym.description || '',
+        pricing: userGym.pricing || '',
+        location_lat: userGym.location_lat || '',
+        location_lng: userGym.location_lng || ''
+      });
+    } catch (err) {
+      console.error('Fetch gym data error:', err);
       setError('Failed to load gym data');
     } finally {
       setLoading(false);
@@ -29,19 +59,20 @@ const GymOwnerDashboard = () => {
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.put(`/api/gyms/${gym.id}`, editForm);
+      // Send all fields including location
+      await api.post('/gyms', editForm);
       setShowEditModal(false);
       fetchGymData();
-    } catch (error) {
-      console.error('Update gym error:', error);
+    } catch (err) {
+      console.error('Update gym error:', err);
       setError('Failed to update gym');
     }
   };
 
   if (loading) {
     return (
-      <Container className="mt-4">
-        <div className="text-center">Loading...</div>
+      <Container className="mt-4 text-center">
+        <div>Loading...</div>
       </Container>
     );
   }
@@ -62,9 +93,7 @@ const GymOwnerDashboard = () => {
           <Card>
             <Card.Header className="d-flex justify-content-between align-items-center">
               <h5 className="mb-0">Gym Profile</h5>
-              <Button variant="primary" onClick={() => setShowEditModal(true)}>
-                Edit Profile
-              </Button>
+              <Button variant="primary" onClick={() => setShowEditModal(true)}>Edit Profile</Button>
             </Card.Header>
             <Card.Body>
               {gym ? (
@@ -73,6 +102,8 @@ const GymOwnerDashboard = () => {
                   <p><strong>Address:</strong> {gym.address}</p>
                   <p><strong>Description:</strong> {gym.description || 'No description provided'}</p>
                   <p><strong>Pricing:</strong> {gym.pricing || 'No pricing information'}</p>
+                  <p><strong>Latitude:</strong> {gym.location_lat || 'Not set'}</p>
+                  <p><strong>Longitude:</strong> {gym.location_lng || 'Not set'}</p>
                 </>
               ) : (
                 <p>No gym profile found. <Button variant="link" onClick={() => setShowEditModal(true)}>Create one now</Button></p>
@@ -111,8 +142,8 @@ const GymOwnerDashboard = () => {
               <Form.Label>Gym Name</Form.Label>
               <Form.Control
                 type="text"
-                value={editForm.gym_name || ''}
-                onChange={(e) => setEditForm({...editForm, gym_name: e.target.value})}
+                value={editForm.gym_name}
+                onChange={(e) => setEditForm({ ...editForm, gym_name: e.target.value })}
                 required
               />
             </Form.Group>
@@ -121,8 +152,8 @@ const GymOwnerDashboard = () => {
               <Form.Label>Address</Form.Label>
               <Form.Control
                 type="text"
-                value={editForm.address || ''}
-                onChange={(e) => setEditForm({...editForm, address: e.target.value})}
+                value={editForm.address}
+                onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
                 required
               />
             </Form.Group>
@@ -132,8 +163,8 @@ const GymOwnerDashboard = () => {
               <Form.Control
                 as="textarea"
                 rows={3}
-                value={editForm.description || ''}
-                onChange={(e) => setEditForm({...editForm, description: e.target.value})}
+                value={editForm.description}
+                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
               />
             </Form.Group>
 
@@ -142,18 +173,34 @@ const GymOwnerDashboard = () => {
               <Form.Control
                 as="textarea"
                 rows={3}
-                value={editForm.pricing || ''}
-                onChange={(e) => setEditForm({...editForm, pricing: e.target.value})}
+                value={editForm.pricing}
+                onChange={(e) => setEditForm({ ...editForm, pricing: e.target.value })}
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Latitude</Form.Label>
+              <Form.Control
+                type="number"
+                value={editForm.location_lat}
+                onChange={(e) => setEditForm({ ...editForm, location_lat: e.target.value })}
+                step="any"
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Longitude</Form.Label>
+              <Form.Control
+                type="number"
+                value={editForm.location_lng}
+                onChange={(e) => setEditForm({ ...editForm, location_lng: e.target.value })}
+                step="any"
               />
             </Form.Group>
           </Modal.Body>
           <Modal.Footer>
-            <Button variant="secondary" onClick={() => setShowEditModal(false)}>
-              Cancel
-            </Button>
-            <Button variant="primary" type="submit">
-              Save Changes
-            </Button>
+            <Button variant="secondary" onClick={() => setShowEditModal(false)}>Cancel</Button>
+            <Button variant="primary" type="submit">Save Changes</Button>
           </Modal.Footer>
         </Form>
       </Modal>

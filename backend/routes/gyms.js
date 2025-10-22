@@ -2,6 +2,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const db = require('../models');
 const auth = require('../middleware/auth');
+const { Op } = require('sequelize');
 
 const router = express.Router();
 
@@ -13,7 +14,7 @@ router.get('/', auth, async (req, res) => {
         {
           model: db.User,
           as: 'owner',
-          attributes: ['id', 'first_name', 'last_name', 'email']
+          attributes: ['id', 'first_name', 'last_name', 'email', 'location_lat', 'location_lng']
         }
       ]
     });
@@ -32,7 +33,7 @@ router.get('/:id', auth, async (req, res) => {
         {
           model: db.User,
           as: 'owner',
-          attributes: ['id', 'first_name', 'last_name', 'email']
+          attributes: ['id', 'first_name', 'last_name', 'email', 'location_lat', 'location_lng']
         }
       ]
     });
@@ -49,41 +50,48 @@ router.get('/:id', auth, async (req, res) => {
 });
 
 // Create/Update gym (for gym owners)
-router.post('/', [
-  auth,
-  body('gym_name').notEmpty(),
-  body('address').notEmpty()
-], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+router.post(
+  '/',
+  [
+    auth,
+    body('gym_name').notEmpty().withMessage('Gym name is required'),
+    body('address').notEmpty().withMessage('Address is required'),
+    body('location_lat').optional().isFloat().withMessage('Latitude must be a number'),
+    body('location_lng').optional().isFloat().withMessage('Longitude must be a number'),
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+
+      if (req.user.userType !== 'gym_owner') {
+        return res.status(403).json({ message: 'Only gym owners can create gyms' });
+      }
+
+      // Check if gym already exists for this owner
+      let gym = await db.Gym.findOne({ where: { owner_id: req.user.userId } });
+
+      if (gym) {
+        // Update existing gym
+        await gym.update(req.body);
+      } else {
+        // Create new gym
+        gym = await db.Gym.create({
+          owner_id: req.user.userId,
+          ...req.body
+        });
+      }
+
+      res.json(gym);
+    } catch (error) {
+      console.error('Create/Update gym error:', error);
+      res.status(500).json({ message: 'Server error' });
     }
-
-    if (req.user.userType !== 'gym_owner') {
-      return res.status(403).json({ message: 'Only gym owners can create gyms' });
-    }
-
-    // Check if gym already exists for this owner
-    let gym = await db.Gym.findOne({ where: { owner_id: req.user.userId } });
-
-    if (gym) {
-      // Update existing gym
-      await gym.update(req.body);
-    } else {
-      // Create new gym
-      gym = await db.Gym.create({
-        owner_id: req.user.userId,
-        ...req.body
-      });
-    }
-
-    res.json(gym);
-  } catch (error) {
-    console.error('Create/Update gym error:', error);
-    res.status(500).json({ message: 'Server error' });
   }
-});
+);
+
 // Advanced search for gyms
 router.get('/search/advanced', auth, async (req, res) => {
   try {
@@ -102,39 +110,35 @@ router.get('/search/advanced', auth, async (req, res) => {
       };
     }
 
-    // Price filter (if we have a pricing model, we might need to adjust)
-    // For now, we assume pricing is stored as a string or in a separate table.
-
-    // We'll do location filtering in JavaScript for simplicity, but for large datasets, use PostGIS
     let gyms = await db.Gym.findAll({
       where: whereClause,
       include: [
         {
           model: db.User,
           as: 'owner',
-          attributes: ['id', 'first_name', 'last_name', 'email']
+          attributes: ['id', 'first_name', 'last_name', 'email', 'location_lat', 'location_lng']
         },
         { model: db.GymReview, as: 'reviews' }
       ]
     });
 
-    // If location is provided, filter by distance
+    // Filter by location if provided
     if (lat && lng && radius) {
       gyms = gyms.filter(gym => {
         const distance = calculateDistance(
           parseFloat(lat),
           parseFloat(lng),
           parseFloat(gym.owner.location_lat),
-          parseFloat(gym.owner.location_long)
+          parseFloat(gym.owner.location_lng)
         );
         return distance <= parseFloat(radius);
       });
     }
 
-    // If minRating is provided, filter by average rating
+    // Filter by minimum rating if provided
     if (minRating) {
       gyms = gyms.filter(gym => {
-        const avgRating = gym.reviews.length > 0 
+        const avgRating = gym.reviews.length > 0
           ? gym.reviews.reduce((acc, review) => acc + review.rating, 0) / gym.reviews.length
           : 0;
         return avgRating >= parseFloat(minRating);
@@ -151,16 +155,19 @@ router.get('/search/advanced', auth, async (req, res) => {
 // Helper function to calculate distance between two coordinates (in km)
 function calculateDistance(lat1, lon1, lat2, lon2) {
   const R = 6371; // Earth radius in km
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = 
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-    Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 }
 
+module.exports = router;
 
 
 
