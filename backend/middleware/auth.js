@@ -18,7 +18,9 @@ module.exports = function(req, res, next) {
   // Verify token
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fitness_connect_secret');
-    req.user = decoded;
+     req.user = decoded;
+     ///req.user = { userId: decoded.id }; 
+
     next();
   } catch (error) {
     res.status(401).json({ message: 'Token is not valid' });

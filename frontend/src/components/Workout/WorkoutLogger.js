@@ -279,4 +279,3 @@ const WorkoutLogger = () => {
 };
 
 export default WorkoutLogger;
-
