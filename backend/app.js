@@ -35,6 +35,7 @@ console.log('🔧 Loading routes...');
 try {
   console.log('🔄 Loading auth routes...');
   app.use('/api/auth', require('./routes/authRoutes'));
+  app.use('/api/admin/auth', require('./routes/adminAuthRoutes'));
   console.log('✅ Auth routes loaded successfully');
 } catch (error) {
   console.error('❌ Error loading auth routes:', error.message);

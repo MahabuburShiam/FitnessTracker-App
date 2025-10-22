@@ -1,28 +1,26 @@
-// backend/middleware/auth.js
 const jwt = require('jsonwebtoken');
-const { User } = require('../models');
 
-const auth = async (req, res, next) => {
-    try {
-        const token = req.header('Authorization')?.replace('Bearer ', '');
+module.exports = function(req, res, next) {
+  // Get token from header
+  const authHeader = req.header('Authorization');
 
-        if (!token) {
-            return res.status(401).json({ error: 'Authentication required' });
-        }
+  // Check if no token
+  if (!authHeader) {
+    return res.status(401).json({ message: 'No token, authorization denied' });
+  }
 
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-        const user = await User.findByPk(decoded.id);
+  // Check if it's a Bearer token
+  const token = authHeader.split(' ')[1];
+  if (!token) {
+    return res.status(401).json({ message: 'Malformed token, authorization denied' });
+  }
 
-        if (!user) {
-            return res.status(401).json({ error: 'User not found' });
-        }
-
-        req.user = user;
-        next();
-    } catch (error) {
-        console.error('Auth error:', error);
-        res.status(401).json({ error: 'Invalid token' });
-    }
+  // Verify token
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fitness_connect_secret');
+    req.user = decoded;
+    next();
+  } catch (error) {
+    res.status(401).json({ message: 'Token is not valid' });
+  }
 };
-
-module.exports = { auth };

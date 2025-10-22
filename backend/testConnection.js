@@ -1,4 +1,5 @@
-const sequelize = require('./config/database.js');
+require('dotenv').config({ path: 'backend/.env' });
+const { sequelize } = require('./models');
 
 sequelize.authenticate()
   .then(() => {

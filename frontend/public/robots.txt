@@ -1,0 +1,9 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Allow all crawlers for now
+Disallow:
+
+# Sitemap location
+Sitemap: https://fitnessconnect.example.com/sitemap.xml

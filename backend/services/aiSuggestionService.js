@@ -1,11 +1,14 @@
-// aiSuggestionService.js
 const { User, WorkoutGoal, SleepLog, DailyLog, WorkoutSuggestion } = require('../models');
-const { Op } = require('sequelize');
 
 class AISuggestionService {
   
   async getPersonalizedSuggestions(userId) {
     const user = await User.findByPk(userId);
+    if (!user) {
+      // Or throw a custom error
+      throw new Error('User not found');
+    }
+
     const goal = await WorkoutGoal.findOne({
       where: { userId, status: 'active' }
     });

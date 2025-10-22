@@ -1,46 +1,42 @@
-// message.js
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
-
-const Message = sequelize.define('Message', {
-  id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
-    primaryKey: true
-  },
-  conversationId: {
-    type: DataTypes.UUID,
-    allowNull: false,
-    references: {
-      model: 'Conversations',
-      key: 'id'
+module.exports = (sequelize, DataTypes) => {
+  const Message = sequelize.define('Message', {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true
+    },
+    sender_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'users',
+        key: 'id'
+      }
+    },
+    receiver_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'users',
+        key: 'id'
+      }
+    },
+    content: {
+      type: DataTypes.TEXT,
+      allowNull: false
     }
-  },
-  senderId: {
-    type: DataTypes.UUID,
-    allowNull: false,
-    references: {
-      model: 'Users',
-      key: 'id'
-    }
-  },
-  content: {
-    type: DataTypes.TEXT,
-    allowNull: false
-  },
-  messageType: {
-    type: DataTypes.ENUM('text', 'image', 'file', 'system'),
-    defaultValue: 'text'
-  },
-  attachments: {
-    type: DataTypes.JSON,
-    defaultValue: [],
-    comment: 'Array of file attachments'
-  },
-  isRead: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false
-  }
-});
+  }, {
+    tableName: 'messages',
+    underscored: true,
+    timestamps: true,
+    createdAt: 'created_at',
+    updatedAt: 'updated_at'
+  });
 
-module.exports = Message;
+  Message.associate = function(models) {
+    Message.belongsTo(models.User, { foreignKey: 'sender_id', as: 'sender' });
+    Message.belongsTo(models.User, { foreignKey: 'receiver_id', as: 'receiver' });
+  };
+
+  return Message;
+};

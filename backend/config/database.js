@@ -1,17 +1,29 @@
-const {Sequelize} = require('sequelize');
 require('dotenv').config();
 
-const sequelize = new Sequelize(
-    process.env.DB_NAME || 'fitness_db',
-    process.env.DB_USER || 'postgres',
-    process.env.DB_PASSWORD || 'password',
-
-    {
-        host : process.env.DB_HOST || 'localhost',
-        dialect : 'postgres',
-        logging :false,
-        pool:{max : 5, min : 0,acquire : 30000, idle :10000}
+module.exports = {
+  development: {
+    username: process.env.DB_USER || 'postgres',
+    password: process.env.DB_PASS || 'password',
+    database: process.env.DB_NAME || 'fitness_connect',
+    host: process.env.DB_HOST || 'localhost',
+    dialect: 'postgres',
+    logging: false
+  },
+  test: {
+    username: process.env.DB_USER,
+    password: process.env.DB_PASS,
+    database: process.env.DB_NAME_TEST,
+    host: process.env.DB_HOST,
+    dialect: 'postgres'
+  },
+  production: {
+    use_env_variable: 'DATABASE_URL',
+    dialect: 'postgres',
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false
+      }
     }
-
-);
-module.exports = sequelize ;
+  }
+};

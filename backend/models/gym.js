@@ -1,67 +1,48 @@
-// backend/models/gym.js
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
-
-const Gym = sequelize.define('Gym', {
-  id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
-    primaryKey: true
-  },
-  ownerId: {
-    type: DataTypes.UUID,
-    allowNull: false,
-    references: {
-      model: 'Users',
-      key: 'id'
+module.exports = (sequelize, DataTypes) => {
+  const Gym = sequelize.define('Gym', {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true
+    },
+    owner_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'users',
+        key: 'id'
+      }
+    },
+    gym_name: {
+      type: DataTypes.STRING(255),
+      allowNull: false
+    },
+    description: {
+      type: DataTypes.TEXT
+    },
+    address: {
+      type: DataTypes.STRING(255),
+      allowNull: false
+    },
+    pricing: {
+      type: DataTypes.TEXT
     }
-  },
-  name: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
-  description: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  },
-  location: {
-    type: DataTypes.JSON,
-    allowNull: false,
-    comment: 'Stores coordinates as {latitude: x, longitude: y}'
-  },
-  address: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
-  facilities: {
-    type: DataTypes.JSON,
-    defaultValue: [],
-    comment: 'Array of facilities like ["pool", "sauna", "yoga_studio"]'
-  },
-  openingHours: {
-    type: DataTypes.JSON,
-    defaultValue: {},
-    comment: 'Opening hours for each day'
-  },
-  contactEmail: {
-    type: DataTypes.STRING,
-    validate: { isEmail: true }
-  },
-  contactPhone: {
-    type: DataTypes.STRING
-  },
-  isVerified: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false
-  },
-  averageRating: {
-    type: DataTypes.FLOAT,
-    defaultValue: 0
-  },
-  totalReviews: {
-    type: DataTypes.INTEGER,
-    defaultValue: 0
-  }
-});
+  }, {
+    tableName: 'gyms',
+    underscored: true,
+    timestamps: true,
+    createdAt: 'created_at',
+    updatedAt: 'updated_at'
+  });
 
-module.exports = Gym;
+  Gym.associate = function(models) {
+    Gym.belongsTo(models.User, { foreignKey: 'owner_id', as: 'owner' });
+    Gym.hasMany(models.GymPhoto, { foreignKey: 'gym_id', as: 'photos' });
+    Gym.hasMany(models.GymAmenity, { foreignKey: 'gym_id', as: 'amenities' });
+    Gym.hasMany(models.GymEquipment, { foreignKey: 'gym_id', as: 'equipment' });
+    Gym.hasMany(models.GymMembershipPlan, { foreignKey: 'gym_id', as: 'membership_plans' });
+    Gym.hasMany(models.GymReview, { foreignKey: 'gym_id', as: 'reviews' });
+  };
+
+  return Gym;
+};

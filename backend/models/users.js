@@ -1,102 +1,67 @@
-// backend/models/users.js
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database.js');
-const bcrypt = require('bcryptjs');
-
-const User = sequelize.define('User', {
-    id: { 
-        type: DataTypes.UUID, 
-        defaultValue: DataTypes.UUIDV4, 
-        primaryKey: true 
+module.exports = (sequelize, DataTypes) => {
+  const User = sequelize.define('User', {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true
     },
     email: {
-        type: DataTypes.STRING,
-        allowNull: false, 
-        unique: true,
-        validate: { isEmail: true }
+      type: DataTypes.STRING(255),
+      unique: true,
+      allowNull: false,
+      validate: {
+        isEmail: true
+      }
     },
-    password: {
-        type: DataTypes.STRING, 
-        allowNull: false
+    password_hash: {
+      type: DataTypes.STRING(255),
+      allowNull: false
     },
-    firstName: {
-        type: DataTypes.STRING, 
-        allowNull: false
+    user_type: {
+      type: DataTypes.ENUM('user', 'gym_owner', 'trainer'),
+      allowNull: false
     },
-    lastName: {
-        type: DataTypes.STRING,
-        allowNull: true
+    first_name: {
+      type: DataTypes.STRING(100),
+      allowNull: false
     },
-    userType: {
-        type: DataTypes.ENUM('admin', 'gym_owner', 'trainer', 'user'),
-        defaultValue: 'user',
-        allowNull: false
+    last_name: {
+      type: DataTypes.STRING(100),
+      allowNull: false
     },
-    age: {
-        type: DataTypes.INTEGER, 
-        allowNull: false,
-        validate: { min: 0, max: 150 }
+    location_lat: {
+      type: DataTypes.DECIMAL(10, 8),
+      allowNull: false
     },
-    weight: {
-        type: DataTypes.FLOAT, 
-        allowNull: false,
-        validate: { min: 1, max: 200 }
-    },
-    height: {
-        type: DataTypes.FLOAT, 
-        allowNull: false,
-        validate: { min: 1, max: 300 }
-    },
-    gender: {
-        type: DataTypes.ENUM('male', 'female', 'other'), 
-        allowNull: false
-    },
-    location: {
-        type: DataTypes.JSON,
-        allowNull: true,
-        comment: 'Stores coordinates as {latitude: x, longitude: y}'
-    },
-    bmi: {
-        type: DataTypes.VIRTUAL,
-        get() {
-            const weight = this.getDataValue('weight');
-            const height = this.getDataValue('height');
-            if (weight && height) {
-                return (weight / ((height / 100) ** 2)).toFixed(2);
-            }
-            return null;
-        }
-    },
-    bmiCategory: {
-        type: DataTypes.VIRTUAL,
-        get() {
-            const bmi = this.get('bmi');
-            if (!bmi) return null;
-            if (bmi < 18.5) return 'Underweight';
-            if (bmi >= 18.5 && bmi < 24.9) return 'Normal weight';
-            if (bmi >= 25 && bmi < 29.9) return 'Overweight';
-            return 'Obesity';
-        }
+    location_long: {
+      type: DataTypes.DECIMAL(11, 8),
+      allowNull: false
     }
-}, {
-    hooks: {
-        beforeCreate: async (user) => {
-            if (user.password) {
-                const salt = await bcrypt.genSalt(10);
-                user.password = await bcrypt.hash(user.password, salt);
-            }
-        },
-        beforeUpdate: async (user) => {
-            if (user.changed('password')) {
-                const salt = await bcrypt.genSalt(10);
-                user.password = await bcrypt.hash(user.password, salt);
-            }
-        }
-    }
-});
+  }, {
+    tableName: 'users',
+    underscored: true,
+    timestamps: true,
+    createdAt: 'created_at',
+    updatedAt: 'updated_at'
+  });
 
-User.prototype.comparePassword = async function (candidatePassword) {
-    return await bcrypt.compare(candidatePassword, this.password);
+  User.associate = function(models) {
+    User.hasOne(models.Gym, { foreignKey: 'owner_id', as: 'gym' });
+    User.hasOne(models.Trainer, { foreignKey: 'trainer_user_id', as: 'trainer_profile' });
+    User.hasMany(models.FitnessJournal, { foreignKey: 'user_id', as: 'journals' });
+    User.hasMany(models.JournalRating, { foreignKey: 'rater_id', as: 'given_ratings' });
+    User.hasMany(models.UserGoal, { foreignKey: 'user_id', as: 'goals' });
+    User.hasMany(models.SleepLog, { foreignKey: 'user_id', as: 'sleep_logs' });
+    User.hasMany(models.DietChart, { foreignKey: 'user_id', as: 'diet_charts' });
+    User.hasMany(models.Message, { foreignKey: 'sender_id', as: 'sent_messages' });
+    User.hasMany(models.Message, { foreignKey: 'receiver_id', as: 'received_messages' });
+    User.hasMany(models.BmiRecord, { foreignKey: 'user_id', as: 'bmi_records' });
+    User.hasMany(models.WorkoutLog, { foreignKey: 'user_id', as: 'workout_logs' });
+    User.hasMany(models.Notification, { foreignKey: 'user_id', as: 'notifications' });
+    User.hasMany(models.AiRecommendation, { foreignKey: 'user_id', as: 'ai_recommendations' });
+    User.hasMany(models.GymReview, { foreignKey: 'reviewer_id', as: 'gym_reviews' });
+    User.hasMany(models.TrainerReview, { foreignKey: 'reviewer_id', as: 'trainer_reviews' });
+  };
+
+  return User;
 };
-
-module.exports = User;

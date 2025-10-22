@@ -1,0 +1,145 @@
+/* Global Styles */
+.App {
+  min-height: 100vh;
+  background-color: #f8f9fa;
+}
+
+/* Navigation */
+.navbar-brand {
+  font-weight: bold;
+  font-size: 1.5rem;
+}
+
+/* Cards */
+.card {
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  border: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.card-header {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+/* Forms */
+.form-control:focus,
+.form-select:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+/* Buttons */
+.btn {
+  border-radius: 0.375rem;
+}
+
+/* Tables */
+.table th {
+  border-top: none;
+  font-weight: 600;
+  color: #495057;
+}
+
+/* Journal Content */
+.journal-content {
+  line-height: 1.6;
+}
+
+.journal-content p {
+  margin-bottom: 1rem;
+}
+
+.journal-content ul,
+.journal-content ol {
+  margin-bottom: 1rem;
+  padding-left: 2rem;
+}
+
+/* Quill Editor */
+.ql-editor {
+  min-height: 200px;
+}
+
+.ql-toolbar.ql-snow {
+  border-top: 1px solid #ccc;
+  border-left: 1px solid #ccc;
+  border-right: 1px solid #ccc;
+}
+
+.ql-container.ql-snow {
+  border-bottom: 1px solid #ccc;
+  border-left: 1px solid #ccc;
+  border-right: 1px solid #ccc;
+}
+
+/* Messaging */
+.messages-container {
+  height: 400px;
+  overflow-y: auto;
+}
+
+.message-bubble {
+  max-width: 70%;
+  word-wrap: break-word;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .container-fluid {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  
+  .card {
+    margin-bottom: 1rem;
+  }
+}
+
+/* Loading States */
+.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Custom Badges */
+.badge {
+  font-weight: 500;
+}
+
+/* Fitness specific styles */
+.bmi-indicator {
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.workout-stats {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.sleep-quality-excellent { color: #28a745; }
+.sleep-quality-good { color: #ffc107; }
+.sleep-quality-poor { color: #dc3545; }
+
+/* Goal Progress */
+.progress {
+  height: 8px;
+}
+
+/* Animation for new messages */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.message-new {
+  animation: slideIn 0.3s ease-out;
+}
