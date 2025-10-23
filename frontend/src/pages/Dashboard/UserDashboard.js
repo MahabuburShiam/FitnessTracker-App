@@ -3,6 +3,26 @@ import { Container, Row, Col, Card, Button, Alert } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 
+// Base API URL
+const BASE_URL = 'http://localhost:5000/api';
+
+// Create axios instance
+const api = axios.create({
+  baseURL: BASE_URL,
+});
+
+// Automatically attach token from localStorage
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
 const UserDashboard = () => {
   const [userData, setUserData] = useState(null);
   const [recentGoals, setRecentGoals] = useState([]);
@@ -17,17 +37,17 @@ const UserDashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      
+
       // Fetch user profile
-      const userRes = await axios.get('/api/users/profile');
+      const userRes = await api.get('/users/profile');
       setUserData(userRes.data.user);
 
       // Fetch recent goals
-      const goalsRes = await axios.get('/api/goals');
+      const goalsRes = await api.get('/goals');
       setRecentGoals(goalsRes.data.slice(0, 3));
 
       // Fetch latest BMI
-      const bmiRes = await axios.get('/api/bmi/history');
+      const bmiRes = await api.get('/bmi/history');
       if (bmiRes.data.length > 0) {
         setBmiData(bmiRes.data[0]);
       }

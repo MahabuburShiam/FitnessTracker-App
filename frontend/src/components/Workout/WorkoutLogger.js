@@ -2,13 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Form, Table, Alert, Modal } from 'react-bootstrap';
 import axios from 'axios';
 
+// ✅ Base URL
 const BASE_URL = 'http://localhost:5000/api/workouts';
-const token = localStorage.getItem('token'); // get token from localStorage
-const axiosConfig = {
-  headers: {
-    Authorization: `Bearer ${token}`,
-  },
-};
+
+// ✅ Create Axios instance with token
+const axiosInstance = axios.create({
+  baseURL: BASE_URL,
+});
+
+// ✅ Automatically attach token to every request
+axiosInstance.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
 const WorkoutLogger = () => {
   const [workouts, setWorkouts] = useState([]);
@@ -33,7 +42,7 @@ const WorkoutLogger = () => {
 
   const fetchWorkouts = async () => {
     try {
-      const res = await axios.get(BASE_URL, axiosConfig);
+      const res = await axiosInstance.get('/');
       setWorkouts(res.data);
     } catch (error) {
       console.error('Fetch workouts error:', error);
@@ -46,7 +55,7 @@ const WorkoutLogger = () => {
     setLoading(true);
 
     try {
-      await axios.post(BASE_URL, formData, axiosConfig);
+      await axiosInstance.post('/', formData);
       setShowModal(false);
       setFormData({
         exercise_name: '',
@@ -61,6 +70,7 @@ const WorkoutLogger = () => {
       });
       fetchWorkouts();
     } catch (error) {
+      console.error('Workout log error:', error);
       setError('Failed to log workout');
     } finally {
       setLoading(false);
@@ -69,9 +79,10 @@ const WorkoutLogger = () => {
 
   const handleDelete = async (workoutId) => {
     try {
-      await axios.delete(`${BASE_URL}/${workoutId}`, axiosConfig);
+      await axiosInstance.delete(`/${workoutId}`);
       fetchWorkouts();
     } catch (error) {
+      console.error('Workout delete error:', error);
       setError('Failed to delete workout');
     }
   };
@@ -123,9 +134,7 @@ const WorkoutLogger = () => {
                         <td>{workout.duration_minutes} min</td>
                         <td>{workout.calories_burned}</td>
                         <td>
-                          {workout.sets && workout.reps && 
-                            `${workout.sets}x${workout.reps}`
-                          }
+                          {workout.sets && workout.reps && `${workout.sets}x${workout.reps}`}
                         </td>
                         <td>{workout.weight_used} kg</td>
                         <td>{workout.distance} km</td>
@@ -148,6 +157,7 @@ const WorkoutLogger = () => {
         </Col>
       </Row>
 
+      {/* Modal for Logging Workout */}
       <Modal show={showModal} onHide={() => setShowModal(false)} size="lg">
         <Modal.Header closeButton>
           <Modal.Title>Log Workout</Modal.Title>

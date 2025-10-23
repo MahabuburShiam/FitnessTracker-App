@@ -24,14 +24,18 @@ export const AuthProvider = ({ children }) => {
     if (token) {
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       // Fetch user data on initial load if token exists
-      api.get('/auth/me')
-        .then(res => setCurrentUser(res.data.user))
-        .catch(() => {
-          // Token is invalid or expired, log the user out
-          localStorage.removeItem('token');
-          setCurrentUser(null);
-        })
-        .finally(() => setLoading(false));
+      if (!currentUser) { // Only fetch if currentUser is not already set
+        api.get('/auth/me')
+          .then(res => setCurrentUser(res.data.user))
+          .catch(() => {
+            // Token is invalid or expired, log the user out
+            localStorage.removeItem('token');
+            setCurrentUser(null);
+          })
+          .finally(() => setLoading(false));
+      } else {
+        setLoading(false);
+      }
     } else {
       setLoading(false);
     }

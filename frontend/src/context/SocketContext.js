@@ -13,7 +13,7 @@ export const SocketProvider = ({ children }) => {
   const { currentUser: user } = useAuth();
 
   useEffect(() => {
-    if (user) {
+    if (user && user.id) {
       const newSocket = io('http://localhost:5000', {
         query: {
           userId: user.id

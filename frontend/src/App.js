@@ -16,10 +16,20 @@ import BMICalculator from './components/BMI/BMICalculator';
 import GoalTracker from './components/Goals/GoalTracker';
 import SleepLog from './components/Sleep/SleepLog';
 import DietChart from './components/Diet/DietChart';
-import FitnessJournal from './components/Journal/FitnessJournal';
+import FitnessJournal from './components/Journal/FitnessJournal'; 
 import GymSearch from './components/Gym/GymSearch';
 import TrainerSearch from './components/Trainer/TrainerSearch';
+//import  mging from './components/Messaging/Messaging';
+///ort Messaging from './components/Messaging/EnhancedMessaging';
+
+
 import Messaging from './components/Messaging/Messaging';
+
+
+
+
+
+
 import WorkoutLogger from './components/Workout/WorkoutLogger';
 import NotificationCenter from './components/Notifications/NotificationCenter';
 import './App.css';
