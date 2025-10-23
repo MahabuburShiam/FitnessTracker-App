@@ -1,5 +1,5 @@
 const express = require('express');
-const { body, validationResult } = require('express-validator');
+const { body, param, validationResult } = require('express-validator');
 const db = require('../models');
 const auth = require('../middleware/auth');
 const { Op } = require('sequelize');
@@ -9,7 +9,7 @@ const router = express.Router();
 // Get messages with specific user
 router.get('/conversation/:userId', [
   auth,
-  body('userId').isInt()
+  param('userId').isInt({ min: 1 }).withMessage('User ID must be a positive integer.')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
