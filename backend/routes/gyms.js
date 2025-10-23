@@ -14,7 +14,7 @@ router.get('/', auth, async (req, res) => {
         {
           model: db.User,
           as: 'owner',
-          attributes: ['id', 'first_name', 'last_name', 'email', 'location_lat', 'location_lng']
+          attributes: ['id', 'first_name', 'last_name', 'email', 'location_lat', 'location_long']
         }
       ]
     });
@@ -33,7 +33,7 @@ router.get('/:id', auth, async (req, res) => {
         {
           model: db.User,
           as: 'owner',
-          attributes: ['id', 'first_name', 'last_name', 'email', 'location_lat', 'location_lng']
+          attributes: ['id', 'first_name', 'last_name', 'email', 'location_lat', 'location_long']
         }
       ]
     });

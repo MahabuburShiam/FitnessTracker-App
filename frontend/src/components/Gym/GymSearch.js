@@ -84,7 +84,85 @@ const GymSearch = () => {
 
   return (
     <Container className="mt-4">
-      {/* ... rest of your JSX stays the same ... */}
+      <h2 className="mb-4 text-center">Find a Gym</h2>
+
+      <Row className="justify-content-center mb-4">
+        <Col md={8}>
+          <Form>
+            <Form.Group>
+              <Form.Control
+                type="text"
+                placeholder="Search by gym name or address..."
+                value={filters.search}
+                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+              />
+            </Form.Group>
+          </Form>
+        </Col>
+      </Row>
+
+      {loading && <div className="text-center">Loading gyms...</div>}
+      {error && <Alert variant="danger">{error}</Alert>}
+
+      <Row>
+        {filteredGyms.map(gym => (
+          <Col md={4} key={gym.id} className="mb-4">
+            <Card className="h-100">
+              <Card.Body>
+                <Card.Title>{gym.gym_name}</Card.Title>
+                <Card.Text>{gym.address}</Card.Text>
+                <Button variant="primary" onClick={() => handleViewDetails(gym)}>
+                  View Details
+                </Button>
+              </Card.Body>
+            </Card>
+          </Col>
+        ))}
+      </Row>
+
+      {/* Gym Details Modal */}
+      <Modal show={showDetails} onHide={() => setShowDetails(false)} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>{selectedGym?.gym_name}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {selectedGym && (
+            <div>
+              <h5>Address</h5>
+              <p>{selectedGym.address}</p>
+
+              <h5>Facilities</h5>
+              <p>{selectedGym.facilities}</p>
+
+              <hr />
+
+              <div className="d-flex justify-content-between align-items-center">
+                <h4>
+                  Reviews <Badge bg="secondary">{calculateAverageRating(reviews)} ★</Badge>
+                </h4>
+                <Button variant="outline-primary" onClick={() => setShowReviewForm(true)}>
+                  Write a Review
+                </Button>
+              </div>
+
+              <ReviewList reviews={reviews} />
+            </div>
+          )}
+        </Modal.Body>
+      </Modal>
+
+      {/* Review Form Modal */}
+      <Modal show={showReviewForm} onHide={() => setShowReviewForm(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Write a review for {selectedGym?.gym_name}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <ReviewForm
+            onSubmit={handleSubmitReview}
+            onCancel={() => setShowReviewForm(false)}
+          />
+        </Modal.Body>
+      </Modal>
     </Container>
   );
 };
