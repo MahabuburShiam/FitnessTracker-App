@@ -1,6 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Form, Button, Alert, Badge } from 'react-bootstrap';
+import { Container, Row, Col, Card, Form, Button, Alert, Badge, Modal } from 'react-bootstrap';
 import axios from 'axios';
+import ReviewList from '../Reviews/ReviewList';
+import ReviewForm from '../Reviews/ReviewForm';
+
+const BASE_URL = 'http://localhost:5000/api';
+
+// Create an axios instance with the base URL
+const axiosInstance = axios.create({
+  baseURL: BASE_URL,
+});
+
+// Use an interceptor to dynamically add the token to every request
+axiosInstance.interceptors.request.use(config => {
+  const token = localStorage.getItem('token');
+  config.headers.Authorization = token ? `Bearer ${token}` : '';
+  return config;
+});
 
 const TrainerSearch = () => {
   const [trainers, setTrainers] = useState([]);
@@ -11,6 +27,10 @@ const TrainerSearch = () => {
     specialty: '',
     maxPrice: ''
   });
+  const [selectedTrainer, setSelectedTrainer] = useState(null);
+  const [showDetails, setShowDetails] = useState(false);
+  const [reviews, setReviews] = useState([]);
+  const [showReviewForm, setShowReviewForm] = useState(false);
 
   useEffect(() => {
     fetchTrainers();
@@ -19,14 +39,40 @@ const TrainerSearch = () => {
   const fetchTrainers = async () => {
     setLoading(true);
     try {
-      const res = await axios.get('/api/trainers');
+      const res = await axiosInstance.get('/trainers');
       setTrainers(res.data);
     } catch (error) {
-      console.error('Fetch trainers error:', error);
+      console.error('Fetch trainers error:', error.response || error.message);
       setError('Failed to load trainers');
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchTrainerReviews = async (trainerId) => {
+    try {
+      const res = await axiosInstance.get(`/trainers/${trainerId}/reviews`);
+      setReviews(res.data);
+    } catch (error) {
+      console.error('Fetch trainer reviews error:', error.response || error.message);
+    }
+  };
+
+  const handleSubmitReview = async (reviewData) => {
+    try {
+      await axiosInstance.post(`/trainers/${selectedTrainer.id}/reviews`, reviewData);
+      setShowReviewForm(false);
+      fetchTrainerReviews(selectedTrainer.id); // Refresh reviews
+    } catch (error) {
+      console.error('Failed to submit review:', error.response || error.message);
+      alert('Failed to submit review. You may have already reviewed this trainer.');
+    }
+  };
+
+  const handleViewDetails = (trainer) => {
+    setSelectedTrainer(trainer);
+    setShowDetails(true);
+    fetchTrainerReviews(trainer.id);
   };
 
   const filteredTrainers = trainers.filter(trainer => {
@@ -175,18 +221,16 @@ const TrainerSearch = () => {
                       <Col md={4}>
                         <div className="text-end">
                           <div className="mb-2">
-                            <span className="h4 text-warning">
-                              {calculateAverageRating(trainer.reviews)} ★
-                            </span>
+                            <span className="h4 text-warning">{calculateAverageRating(trainer.reviews)} ★</span>
                             <span className="text-muted">
                               ({trainer.reviews?.length || 0} reviews)
                             </span>
                           </div>
                           
-                          <Button variant="outline-primary" className="me-2">
-                            View Profile
+                          <Button variant="outline-primary" className="me-2" onClick={() => handleViewDetails(trainer)}>
+                            View Details
                           </Button>
-                          <Button variant="primary">
+                          <Button variant="primary" onClick={() => window.location.href = `/messages/${trainer.user.id}`}>
                             Message Trainer
                           </Button>
                         </div>
@@ -210,6 +254,50 @@ const TrainerSearch = () => {
           )}
         </Col>
       </Row>
+
+      {/* Trainer Details Modal */}
+      <Modal show={showDetails} onHide={() => setShowDetails(false)} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>{selectedTrainer?.user.first_name} {selectedTrainer?.user.last_name}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {selectedTrainer && (
+            <div>
+              <h5>Qualifications</h5>
+              <p>{selectedTrainer.qualifications}</p>
+
+              <h5>Specialties</h5>
+              <p>{selectedTrainer.specialties}</p>
+
+              <hr />
+
+              <div className="d-flex justify-content-between align-items-center">
+                <h4>
+                  Reviews <Badge bg="secondary">{calculateAverageRating(reviews)} ★</Badge>
+                </h4>
+                <Button variant="outline-primary" onClick={() => setShowReviewForm(true)}>
+                  Write a Review
+                </Button>
+              </div>
+
+              <ReviewList reviews={reviews} />
+            </div>
+          )}
+        </Modal.Body>
+      </Modal>
+
+      {/* Review Form Modal */}
+      <Modal show={showReviewForm} onHide={() => setShowReviewForm(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Write a review for {selectedTrainer?.user.first_name}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <ReviewForm
+            onReviewSubmit={handleSubmitReview}
+            entityId={selectedTrainer?.id}
+          />
+        </Modal.Body>
+      </Modal>
     </Container>
   );
 };

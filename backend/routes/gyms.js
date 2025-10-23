@@ -6,6 +6,23 @@ const { Op } = require('sequelize');
 
 const router = express.Router();
 
+// Mount the reviews router to handle nested review routes
+router.use('/', require('./gymReviews'));
+
+// Helper function to calculate distance between two coordinates (in km)
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  if (lat1 == null || lon1 == null || lat2 == null || lon2 == null) return null;
+  const R = 6371; // Earth radius in km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 // Get all gyms
 router.get('/', auth, async (req, res) => {
   try {
@@ -18,7 +35,32 @@ router.get('/', auth, async (req, res) => {
         }
       ]
     });
-    res.json(gyms);
+
+    // Get current user's location for distance calculation
+    const currentUser = await db.User.findByPk(req.user.userId, {
+      attributes: ['location_lat', 'location_long']
+    });
+
+    const gymsWithDistance = gyms.map(gym => {
+      const gymData = gym.toJSON();
+      let distance = null;
+
+      if (currentUser?.location_lat && currentUser?.location_long && gym.owner?.location_lat && gym.owner?.location_long) {
+        distance = calculateDistance(
+          parseFloat(currentUser.location_lat),
+          parseFloat(currentUser.location_long),
+          parseFloat(gym.owner.location_lat),
+          parseFloat(gym.owner.location_long)
+        );
+      }
+      gymData.distance = distance;
+      return gymData;
+    });
+
+    // Sort gyms by distance (null distances will be at the end)
+    gymsWithDistance.sort((a, b) => (a.distance === null) - (b.distance === null) || a.distance - b.distance);
+
+    res.json(gymsWithDistance);
   } catch (error) {
     console.error('Get gyms error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -166,31 +208,5 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 }
-
-module.exports = router;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 module.exports = router;

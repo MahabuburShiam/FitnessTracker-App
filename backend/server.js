@@ -32,9 +32,6 @@ app.use('/api/trainers', require('./routes/trainers'));
 ///.use('/api/messages', require('./routes/messages'));
 app.use('/api/workouts', require('./routes/workouts'));
 app.use('/api/notifications', require('./routes/notifications'));
-// Add these routes after existing route imports
-app.use('/api/reviews/gym', require('./routes/gymReviews'));
-app.use('/api/reviews/trainer', require('./routes/trainerReviews'));
 app.use('/api/search', require('./routes/search'));
 app.use('/api/admin', require('./routes/admin')); // Renamed from pushNotifications.js for clarity
 app.use('/api/ai', require('./routes/aiRecommendations'));

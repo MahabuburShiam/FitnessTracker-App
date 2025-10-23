@@ -5,6 +5,9 @@ const auth = require('../middleware/auth');
 
 const router = express.Router();
 
+// Mount the reviews router to handle nested review routes
+router.use('/:trainerId/reviews', require('./trainerReviews'));
+
 // Get all trainers
 router.get('/', auth, async (req, res) => {
   try {

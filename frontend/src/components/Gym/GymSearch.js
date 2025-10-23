@@ -7,15 +7,16 @@ import ReviewForm from '../Reviews/ReviewForm';
 // Base URL with port 5000
 const BASE_URL = 'http://localhost:5000/api';
 
-// Get token from localStorage
-const token = localStorage.getItem('token');
-
 // Create axios instance with base URL and token
 const axiosInstance = axios.create({
   baseURL: BASE_URL,   // ✅ base URL points to 5000
-  headers: {
-    Authorization: `Bearer ${token || ''}`,
-  },
+});
+
+// Use an interceptor to dynamically add the token to every request
+axiosInstance.interceptors.request.use(config => {
+  const token = localStorage.getItem('token');
+  config.headers.Authorization = token ? `Bearer ${token}` : '';
+  return config;
 });
 
 const GymSearch = () => {
@@ -47,7 +48,7 @@ const GymSearch = () => {
 
   const fetchGymReviews = async (gymId) => {
     try {
-      const res = await axiosInstance.get(`/reviews/gym/${gymId}`);
+      const res = await axiosInstance.get(`/gyms/${gymId}/reviews`);
       setReviews(res.data);
     } catch (error) {
       console.error('Fetch gym reviews error:', error.response || error.message);
@@ -56,7 +57,7 @@ const GymSearch = () => {
 
   const handleSubmitReview = async (reviewData) => {
     try {
-      await axiosInstance.post(`/reviews/gym/${selectedGym.id}`, reviewData);
+      await axiosInstance.post(`/gyms/${selectedGym.id}/reviews`, reviewData);
       setShowReviewForm(false);
       fetchGymReviews(selectedGym.id);
     } catch (error) {
@@ -110,7 +111,12 @@ const GymSearch = () => {
             <Card className="h-100">
               <Card.Body>
                 <Card.Title>{gym.gym_name}</Card.Title>
-                <Card.Text>{gym.address}</Card.Text>
+                <Card.Text>
+                  {gym.address}
+                  {gym.distance !== null && (
+                    <Badge bg="info" className="ms-2">{gym.distance.toFixed(1)} km away</Badge>
+                  )}
+                </Card.Text>
                 <Button variant="primary" onClick={() => handleViewDetails(gym)}>
                   View Details
                 </Button>
@@ -158,8 +164,9 @@ const GymSearch = () => {
         </Modal.Header>
         <Modal.Body>
           <ReviewForm
-            onSubmit={handleSubmitReview}
-            onCancel={() => setShowReviewForm(false)}
+            onReviewSubmit={handleSubmitReview}
+            type="gym"
+            entityId={selectedGym?.id}
           />
         </Modal.Body>
       </Modal>
